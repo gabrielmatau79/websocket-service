@@ -1,0 +1,56 @@
+version: '3.9'
+
+services:
+  websocket-service-items:
+    build: .
+    image: websocket-service-items:test
+    container_name: websocket-service-items
+    environment:
+      - APP_PORT=3100
+      - WS_PORT=3200
+      - MONGODB_URI=mongodb://mongodb:27017/items
+    restart: always
+    ports:
+      - 3100:3100
+      - 3200:3200
+    networks:
+      - loadbalancing
+    depends_on:
+      - mongodb
+
+  mongodb:
+    container_name: mongodb
+    image: mongo:latest
+    restart: always
+    command:
+      - --storageEngine
+      - wiredTiger
+      - --auth
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=ws-service
+      - MONGO_INITDB_ROOT_PASSWORD=ws-service
+      - MONGO_INITDB_DATABASE=admin
+    ports:
+      - '27017:27017'
+    networks:
+      - loadbalancing
+    volumes:
+      - ~/data/mongodb-websocket-service:/data/db
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://ws-service:ws-service@mongodb:27017/
+    depends_on:
+      - mongodb
+    networks:
+      - loadbalancing
+
+networks:
+  loadbalancing:
+    external: true
